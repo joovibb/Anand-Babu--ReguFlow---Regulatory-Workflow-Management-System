@@ -1,25 +1,17 @@
-import { prisma } from "../../../lib/prisma";
+import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
-export async function GET() {
-  const products = await prisma.product.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+const adapter = new PrismaBetterSqlite3({
+  url: "file:./dev.db",
+});
 
-  return Response.json(products);
-}
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-export async function POST(req: Request) {
-  const body = await req.json();
+export const prisma =
+  globalForPrisma.prisma ?? new PrismaClient({ adapter });
 
-  const product = await prisma.product.create({
-    data: {
-      name: body.name,
-      category: body.category,
-      description: body.description,
-    },
-  });
-
-  return Response.json(product);
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
 }
