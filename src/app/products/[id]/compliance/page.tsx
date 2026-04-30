@@ -1,12 +1,25 @@
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+
+async function deleteDocument(documentId: string, productId: string) {
+  "use server";
+
+  await prisma.productDocument.delete({
+    where: { id: documentId },
+  });
+
+  revalidatePath(`/products/${productId}/compliance`);
+}
 
 export default async function CompliancePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
+
   const product = await prisma.product.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       documents: true,
     },
@@ -28,21 +41,25 @@ export default async function CompliancePage({
 
   const isCompliant = requirements.length > 0 && missingDocs.length === 0;
 
+  if (isCompliant && product.status !== "Approved") {
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { status: "Approved" },
+    });
+  }
+
   return (
     <main className="p-10">
       <h1 className="text-3xl font-bold">Compliance Check</h1>
 
       <div className="mt-6">
-        <p>
-          <strong>Product:</strong> {product.name}
-        </p>
-        <p>
-          <strong>Country:</strong> {product.country || "Not set"}
-        </p>
+        <p><strong>Product:</strong> {product.name}</p>
+        <p><strong>Country:</strong> {product.country || "Not set"}</p>
+        <p><strong>Status:</strong> {isCompliant ? "Approved" : product.status}</p>
       </div>
 
       <div className="mt-6">
-        <h2 className="text-xl font-bold">Status</h2>
+        <h2 className="text-xl font-bold">Compliance Status</h2>
         {isCompliant ? (
           <p className="text-green-600 font-semibold">✅ Compliant</p>
         ) : (
@@ -57,7 +74,16 @@ export default async function CompliancePage({
         ) : (
           <ul className="list-disc ml-6">
             {requirements.map((req) => (
-              <li key={req.id}>{req.document}</li>
+              <li
+                key={req.id}
+                className={
+                  uploadedDocs.includes(req.document)
+                    ? "text-green-600"
+                    : "text-red-600"
+                }
+              >
+                {uploadedDocs.includes(req.document) ? "✅" : "❌"} {req.document}
+              </li>
             ))}
           </ul>
         )}
@@ -78,7 +104,15 @@ export default async function CompliancePage({
         ) : (
           <ul className="list-disc ml-6">
             {product.documents.map((doc) => (
-              <li key={doc.id}>{doc.name}</li>
+              <li key={doc.id} className="flex gap-3 items-center">
+                <span>{doc.name}</span>
+
+                <form action={deleteDocument.bind(null, doc.id, product.id)}>
+                  <button className="text-red-600 text-sm">
+                    Delete
+                  </button>
+                </form>
+              </li>
             ))}
           </ul>
         )}

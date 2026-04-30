@@ -1,5 +1,16 @@
 import ProductForm from "@/components/ProductForm";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+
+async function deleteProduct(id: string) {
+  "use server";
+
+  await prisma.product.delete({
+    where: { id },
+  });
+
+  revalidatePath("/products");
+}
 
 export default async function ProductsPage() {
   const products = await prisma.product.findMany({
@@ -9,6 +20,7 @@ export default async function ProductsPage() {
   return (
     <main className="p-10">
       <h1 className="text-3xl font-bold">Products</h1>
+
       <p className="mt-2 text-gray-600">
         Manage product approvals here.
       </p>
@@ -43,7 +55,6 @@ export default async function ProductsPage() {
                   {product.description}
                 </p>
 
-                {/* Status Buttons */}
                 <form
                   action={`/api/products/${product.id}/status`}
                   method="POST"
@@ -74,13 +85,20 @@ export default async function ProductsPage() {
                   </button>
                 </form>
 
-                {/* Compliance Button */}
-                <a
-                  href={`/products/${product.id}/compliance`}
-                  className="inline-block mt-4 bg-black text-white px-4 py-2 rounded"
-                >
-                  Check Compliance
-                </a>
+                <div className="mt-4 flex gap-3">
+                  <a
+                    href={`/products/${product.id}/compliance`}
+                    className="bg-black text-white px-4 py-2 rounded"
+                  >
+                    Check Compliance
+                  </a>
+
+                  <form action={deleteProduct.bind(null, product.id)}>
+                    <button className="bg-red-600 text-white px-4 py-2 rounded">
+                      Delete Product
+                    </button>
+                  </form>
+                </div>
               </div>
             ))}
           </div>

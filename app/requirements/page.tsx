@@ -1,54 +1,58 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
-export default function Home() {
+async function deleteRequirement(id: string) {
+  "use server";
+
+  await prisma.requirement.delete({
+    where: { id },
+  });
+
+  revalidatePath("/requirements");
+}
+
+export default async function RequirementsPage() {
+  const requirements = await prisma.requirement.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
   return (
-    <main className="min-h-screen p-10 bg-gray-100">
-      <h1 className="text-4xl font-bold text-gray-900">ReguFlow</h1>
+    <main className="p-10">
+      <h1 className="text-3xl font-bold">Requirements</h1>
 
       <p className="mt-2 text-gray-600">
-        Regulatory Workflow Management System
+        View regulatory requirements by country and document.
       </p>
 
-      {/* Navigation Cards */}
-      <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link
-          href="/dashboard"
-          className="border p-6 rounded shadow hover:shadow-lg bg-white"
-        >
-          <h2 className="text-xl font-bold">Dashboard</h2>
-          <p className="mt-2 text-gray-600">
-            View system overview and compliance stats
-          </p>
-        </Link>
+      <Link
+        href="/requirements/new"
+        className="inline-block mt-4 bg-black text-white px-4 py-2 rounded"
+      >
+        Add Requirement
+      </Link>
 
-        <Link
-          href="/products"
-          className="border p-6 rounded shadow hover:shadow-lg bg-white"
-        >
-          <h2 className="text-xl font-bold">Products</h2>
-          <p className="mt-2 text-gray-600">
-            Manage products and approval workflow
-          </p>
-        </Link>
+      <div className="mt-8 space-y-4">
+        {requirements.length === 0 ? (
+          <p>No requirements added yet.</p>
+        ) : (
+          requirements.map((req) => (
+            <div key={req.id} className="border p-4 rounded bg-white shadow">
+              <p>
+                <strong>Country:</strong> {req.country}
+              </p>
+              <p>
+                <strong>Document:</strong> {req.document}
+              </p>
 
-        <Link
-          href="/requirements"
-          className="border p-6 rounded shadow hover:shadow-lg bg-white"
-        >
-          <h2 className="text-xl font-bold">Requirements</h2>
-          <p className="mt-2 text-gray-600">
-            Define regulatory requirements by country
-          </p>
-        </Link>
-      </div>
-
-      {/* Description */}
-      <div className="mt-12 max-w-xl text-gray-700">
-        <p>
-          ReguFlow helps track regulatory compliance by matching product
-          documents with country-specific requirements and highlighting
-          missing approvals.
-        </p>
+              <form action={deleteRequirement.bind(null, req.id)}>
+                <button className="mt-3 text-red-600">
+                  Delete Requirement
+                </button>
+              </form>
+            </div>
+          ))
+        )}
       </div>
     </main>
   );

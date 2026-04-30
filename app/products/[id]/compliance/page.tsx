@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma";
 export default async function CompliancePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
+
   const product = await prisma.product.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       documents: true,
     },
@@ -33,12 +35,8 @@ export default async function CompliancePage({
       <h1 className="text-3xl font-bold">Compliance Check</h1>
 
       <div className="mt-6">
-        <p>
-          <strong>Product:</strong> {product.name}
-        </p>
-        <p>
-          <strong>Country:</strong> {product.country || "Not set"}
-        </p>
+        <p><strong>Product:</strong> {product.name}</p>
+        <p><strong>Country:</strong> {product.country || "Not set"}</p>
       </div>
 
       <div className="mt-6">
