@@ -9,7 +9,9 @@ export default async function ProductsPage() {
   return (
     <main className="p-10">
       <h1 className="text-3xl font-bold">Products</h1>
-      <p className="mt-2 text-gray-600">Manage product approvals here.</p>
+      <p className="mt-2 text-gray-600">
+        Manage product approvals here.
+      </p>
 
       <div className="mt-6">
         <ProductForm />
@@ -25,17 +27,23 @@ export default async function ProductsPage() {
             {products.map((product: any) => (
               <div key={product.id} className="border p-4 rounded">
                 <h3 className="font-bold">{product.name}</h3>
+
                 <p>Category: {product.category}</p>
                 <p>Country: {product.country || "Not set"}</p>
                 <p>Status: {product.status}</p>
+
                 <p>
                   Due Date:{" "}
                   {product.dueDate
                     ? new Date(product.dueDate).toDateString()
                     : "No due date"}
                 </p>
-                <p className="text-gray-600">{product.description}</p>
 
+                <p className="text-gray-600">
+                  {product.description}
+                </p>
+
+                {/* Status Buttons */}
                 <form
                   action={`/api/products/${product.id}/status`}
                   method="POST"
@@ -65,6 +73,14 @@ export default async function ProductsPage() {
                     Approve
                   </button>
                 </form>
+
+                {/* Compliance Button */}
+                <a
+                  href={`/products/${product.id}/compliance`}
+                  className="inline-block mt-4 bg-black text-white px-4 py-2 rounded"
+                >
+                  Check Compliance
+                </a>
               </div>
             ))}
           </div>
